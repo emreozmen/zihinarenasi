@@ -55,7 +55,7 @@ Bu gizlilik politikası zaman zaman güncellenebilir. Değişiklikler bu sayfada
 7. İLETİŞİM
  
 Gizlilik politikamız hakkında sorularınız için:
-E-posta: birkelimebirislemoyun@gmail.com
+E-posta: zihinarenasi@gmail.com
  
 ==============================================
  
@@ -111,4 +111,4 @@ This privacy policy may be updated from time to time. Changes will be published 
 7. CONTACT
  
 For questions about our privacy policy:
-Email: birkelimebirislemoyun@gmail.com
+Email: zihinarenasi@gmail.com
