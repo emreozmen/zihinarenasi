@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "457648861878",
+    "project_id": "zihinarenasi-54d26",
+    "storage_bucket": "zihinarenasi-54d26.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:457648861878:android:52dd06f0b6f2f7b8512c17",
+        "android_client_info": {
+          "package_name": "com.emreozmen.zihinarenasi"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSZJuBEKKBzltuI0vm8WOjyHWxx1XoaHo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 2b2a865caf4b82a4fb22ca9017e59099
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - resultsCard: {instanceID: 0}
+  - finalScoreText: {instanceID: 0}
+  - filledStarSprite: {fileID: 21300000, guid: 70f1b9f3cf4b58f49a1c2cca9e21801d, type: 3}
+  - perfectStarSprite: {fileID: 21300000, guid: d2f9399172af4de4a97058da64cefa03, type: 3}
+  - emptyStarSprite: {fileID: 21300000, guid: 15b63a15bdf7aa44eb361d5cc0f89d66, type: 3}
+  - confettiPrefab: {fileID: 7354639553793266638, guid: 6a56784f2ca970648b56ebdfb55a5185, type: 3}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
