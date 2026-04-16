@@ -173,28 +173,33 @@ public class MathRoundManager : MonoBehaviour
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
 
+        // İlk sayı seçilmemişse — seç
         if (firstSelected == null)
         {
             firstSelected = tile;
             firstSelected.SetSelected(true);
-            feedbackText.text = "İlk sayı: " + tile.Value;
+            feedbackText.text = "İlk sayı: " + tile.Value + "\nŞimdi bir işlem seç!";
             return;
         }
 
+        // İlk sayıya tekrar basıldıysa — seçimi kaldır
         if (tile == firstSelected)
         {
             firstSelected.SetSelected(false);
             firstSelected = null;
-            feedbackText.text = "İlk seçim kaldırıldı.";
+            feedbackText.text = "2 sayı ve işlem seç.";
             return;
         }
 
+        // İlk sayı seçili ama işlem seçilmemişse — uyar, ikinci sayı seçilemesin
         if (currentOperation == MathOperation.None)
         {
-            feedbackText.text = "Önce işlem seç.";
+            feedbackText.text = "Önce işlem seç!";
+            if (AudioManager.Instance != null) AudioManager.Instance.PlayIncorrect();
             return;
         }
 
+        // İkinci sayı seçilmemişse — seç
         if (secondSelected == null)
         {
             secondSelected = tile;
@@ -203,6 +208,7 @@ public class MathRoundManager : MonoBehaviour
             return;
         }
 
+        // İkinci sayıya tekrar basıldıysa — seçimi kaldır
         if (tile == secondSelected)
         {
             secondSelected.SetSelected(false);
@@ -215,10 +221,41 @@ public class MathRoundManager : MonoBehaviour
     // İşlem Seçimi
     // ──────────────────────────────────────────
 
-    public void SelectAdd() { if (AudioManager.Instance != null) AudioManager.Instance.PlayClick(); currentOperation = MathOperation.Add; feedbackText.text = "İşlem: +"; }
-    public void SelectSubtract() { if (AudioManager.Instance != null) AudioManager.Instance.PlayClick(); currentOperation = MathOperation.Subtract; feedbackText.text = "İşlem: -"; }
-    public void SelectMultiply() { if (AudioManager.Instance != null) AudioManager.Instance.PlayClick(); currentOperation = MathOperation.Multiply; feedbackText.text = "İşlem: x"; }
-    public void SelectDivide() { if (AudioManager.Instance != null) AudioManager.Instance.PlayClick(); currentOperation = MathOperation.Divide; feedbackText.text = "İşlem: /"; }
+    public void SelectAdd()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+        currentOperation = MathOperation.Add;
+        feedbackText.text = firstSelected != null
+            ? $"İlk sayı: {firstSelected.Value} | İşlem: +"
+            : "İşlem: +";
+    }
+
+    public void SelectSubtract()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+        currentOperation = MathOperation.Subtract;
+        feedbackText.text = firstSelected != null
+            ? $"İlk sayı: {firstSelected.Value} | İşlem: -"
+            : "İşlem: -";
+    }
+
+    public void SelectMultiply()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+        currentOperation = MathOperation.Multiply;
+        feedbackText.text = firstSelected != null
+            ? $"İlk sayı: {firstSelected.Value} | İşlem: x"
+            : "İşlem: x";
+    }
+
+    public void SelectDivide()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+        currentOperation = MathOperation.Divide;
+        feedbackText.text = firstSelected != null
+            ? $"İlk sayı: {firstSelected.Value} | İşlem: ÷"
+            : "İşlem: ÷";
+    }
 
     // ──────────────────────────────────────────
     // İşlem Uygula
@@ -280,7 +317,7 @@ public class MathRoundManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // İpucu — Önce hak kontrol et, yoksa reklam
+    // İpucu
     // ──────────────────────────────────────────
 
     public void OnHintButton()
@@ -292,21 +329,17 @@ public class MathRoundManager : MonoBehaviour
 
         if (hintCount > 0)
         {
-            // İpucu hakkı var — direkt kullan
             PlayerPrefs.SetInt("HintCount", hintCount - 1);
             PlayerPrefs.Save();
 
-            // UI güncelle
             if (GameManager.Instance != null && GameManager.Instance.uiManager != null)
                 GameManager.Instance.uiManager.UpdateHintCount();
 
             GiveHint();
-
             if (hintButton != null) hintButton.interactable = false;
         }
         else
         {
-            // İpucu hakkı yok — reklam izle
             if (hintButton != null) hintButton.interactable = false;
 
             if (AdManager.Instance != null)
@@ -320,7 +353,7 @@ public class MathRoundManager : MonoBehaviour
     {
         int closest = GetClosestValueToTarget();
         int diff = Mathf.Abs(target - closest);
-        feedbackText.text = $"İpucu: Mevcut sayılardan en yakın: {closest} (fark: {diff})";
+        feedbackText.text = $"İpucu: En yakın sayı {closest} (fark: {diff})";
     }
 
     // ──────────────────────────────────────────
@@ -457,7 +490,7 @@ public class MathRoundManager : MonoBehaviour
             case MathOperation.Add: return "+";
             case MathOperation.Subtract: return "-";
             case MathOperation.Multiply: return "x";
-            case MathOperation.Divide: return "/";
+            case MathOperation.Divide: return "÷";
             default: return "?";
         }
     }

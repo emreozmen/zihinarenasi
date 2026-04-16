@@ -62,7 +62,6 @@ public class LivesManager : MonoBehaviour
         int newCount = current - 1;
         PlayerPrefs.SetInt(LivesKey, newCount);
 
-        // Zamanlayıcıyı başlat — sadece MaxLives'dan ilk düşüşte
         if (!PlayerPrefs.HasKey(LastLostTimeKey))
             PlayerPrefs.SetString(LastLostTimeKey, DateTime.UtcNow.ToString("o"));
 
@@ -125,13 +124,11 @@ public class LivesManager : MonoBehaviour
 
         double minutesPassed = (DateTime.UtcNow - lastLost).TotalMinutes;
 
-        // Kaç can doldu hesapla
         int livesToAdd = 0;
         double usedMinutes = 0;
 
         for (int i = 0; i < MaxLives - current; i++)
         {
-            // i=0: ilk eksik can (MaxLives - current - 1 indeksindeki)
             int idx = MaxLives - current - 1 - i;
             if (idx < 0) break;
             int needed = RechargeMinutes[idx];
@@ -168,21 +165,30 @@ public class LivesManager : MonoBehaviour
     public TimeSpan GetTimeUntilNextLife()
     {
         int current = PlayerPrefs.GetInt(LivesKey, MaxLives);
+        Debug.Log($"GetTimeUntilNextLife — Lives: {current}");
+
         if (current >= MaxLives) return TimeSpan.Zero;
 
         string lastLostStr = PlayerPrefs.GetString(LastLostTimeKey, "");
+        Debug.Log($"LastLostTime: '{lastLostStr}'");
+
         if (string.IsNullOrEmpty(lastLostStr)) return TimeSpan.Zero;
 
         if (!DateTime.TryParse(lastLostStr, out DateTime lastLost)) return TimeSpan.Zero;
 
         double minutesPassed = (DateTime.UtcNow - lastLost).TotalMinutes;
+        Debug.Log($"Geçen dakika: {minutesPassed:F2}");
 
-        // Bir sonraki can için indeks
+        // Bir sonraki can için gereken indeks
         int idx = MaxLives - current - 1;
+        Debug.Log($"Recharge index: {idx} | Needed minutes: {(idx >= 0 && idx < RechargeMinutes.Length ? RechargeMinutes[idx] : -1)}");
+
         if (idx < 0 || idx >= RechargeMinutes.Length) return TimeSpan.Zero;
 
         int needed = RechargeMinutes[idx];
         double remaining = needed - minutesPassed;
+
+        Debug.Log($"Kalan dakika: {remaining:F2}");
 
         return remaining > 0 ? TimeSpan.FromMinutes(remaining) : TimeSpan.Zero;
     }
@@ -217,7 +223,7 @@ public class LivesManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // Sınırsız Can — Kimse sınırsız cana sahip değil
+    // Sınırsız Can
     // ──────────────────────────────────────────
 
     public bool IsUnlimitedLives() => false;

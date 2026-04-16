@@ -13,7 +13,7 @@ public class AdManager : MonoBehaviour
 #elif UNITY_IOS
     private const string InterstitialId = "ca-app-pub-3794471707334842/5797650640";
     private const string RewardedId     = "ca-app-pub-3794471707334842/1802565316";
-    private const string BannerId       = "ca-app-pub-3794471707334842/2934735716";
+    private const string BannerId       = "ca-app-pub-3794471707334842/3323075638";
 #else
     private const string InterstitialId = "ca-app-pub-3940256099942544/1033173712";
     private const string RewardedId = "ca-app-pub-3940256099942544/5224354917";
