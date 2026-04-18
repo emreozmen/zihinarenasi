@@ -14,6 +14,7 @@ workflows:
     scripts:
       - name: Activate Unity License
         script: |
+          echo "$UNITY_LICENSE" > /tmp/Unity_lic.ulf
           $UNITY_HOME/Contents/MacOS/Unity \
             -batchmode \
             -quit \
