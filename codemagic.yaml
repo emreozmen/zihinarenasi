@@ -1,0 +1,54 @@
+workflows:
+  unity-ios-workflow:
+    name: ZihinArenasi iOS Build
+    max_build_duration: 120
+    environment:
+      groups:
+        - unity_credentials
+        - ios_credentials
+      vars:
+        UNITY_VERSION: 6000.3.13f1
+        BUNDLE_ID: com.zihinarenasi.zihinarenasi
+        XCODE_WORKSPACE: Unity-iPhone.xcworkspace
+        XCODE_SCHEME: Unity-iPhone
+    scripts:
+      - name: Activate Unity License
+        script: |
+          $UNITY_HOME/Contents/MacOS/Unity \
+            -batchmode \
+            -quit \
+            -logFile /dev/stdout \
+            -manualLicenseFile /tmp/Unity_lic.ulf \
+            || true
+      - name: Build Unity iOS
+        script: |
+          $UNITY_HOME/Contents/MacOS/Unity \
+            -batchmode \
+            -quit \
+            -logFile /dev/stdout \
+            -projectPath . \
+            -buildTarget iOS \
+            -executeMethod BuildScript.BuildIOS \
+            -nographics
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build Xcode project
+        script: |
+          xcode-project build-ipa \
+            --workspace ios/Unity-iPhone.xcworkspace \
+            --scheme Unity-iPhone
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
