@@ -6,8 +6,8 @@ workflows:
       groups:
         - unity_credentials
         - ios_credentials
+      unity: 6000.3.13f1
       vars:
-        UNITY_VERSION: 6000.3.13f1
         BUNDLE_ID: com.zihinarenasi.zihinarenasi
         XCODE_WORKSPACE: Unity-iPhone.xcworkspace
         XCODE_SCHEME: Unity-iPhone
