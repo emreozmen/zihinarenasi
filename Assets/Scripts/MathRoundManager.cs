@@ -173,7 +173,6 @@ public class MathRoundManager : MonoBehaviour
 
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
 
-        // İlk sayı seçilmemişse — seç
         if (firstSelected == null)
         {
             firstSelected = tile;
@@ -182,7 +181,6 @@ public class MathRoundManager : MonoBehaviour
             return;
         }
 
-        // İlk sayıya tekrar basıldıysa — seçimi kaldır
         if (tile == firstSelected)
         {
             firstSelected.SetSelected(false);
@@ -191,7 +189,6 @@ public class MathRoundManager : MonoBehaviour
             return;
         }
 
-        // İlk sayı seçili ama işlem seçilmemişse — uyar, ikinci sayı seçilemesin
         if (currentOperation == MathOperation.None)
         {
             feedbackText.text = "Önce işlem seç!";
@@ -199,7 +196,6 @@ public class MathRoundManager : MonoBehaviour
             return;
         }
 
-        // İkinci sayı seçilmemişse — seç
         if (secondSelected == null)
         {
             secondSelected = tile;
@@ -208,7 +204,6 @@ public class MathRoundManager : MonoBehaviour
             return;
         }
 
-        // İkinci sayıya tekrar basıldıysa — seçimi kaldır
         if (tile == secondSelected)
         {
             secondSelected.SetSelected(false);
@@ -225,36 +220,28 @@ public class MathRoundManager : MonoBehaviour
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
         currentOperation = MathOperation.Add;
-        feedbackText.text = firstSelected != null
-            ? $"İlk sayı: {firstSelected.Value} | İşlem: +"
-            : "İşlem: +";
+        feedbackText.text = firstSelected != null ? $"İlk sayı: {firstSelected.Value} | İşlem: +" : "İşlem: +";
     }
 
     public void SelectSubtract()
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
         currentOperation = MathOperation.Subtract;
-        feedbackText.text = firstSelected != null
-            ? $"İlk sayı: {firstSelected.Value} | İşlem: -"
-            : "İşlem: -";
+        feedbackText.text = firstSelected != null ? $"İlk sayı: {firstSelected.Value} | İşlem: -" : "İşlem: -";
     }
 
     public void SelectMultiply()
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
         currentOperation = MathOperation.Multiply;
-        feedbackText.text = firstSelected != null
-            ? $"İlk sayı: {firstSelected.Value} | İşlem: x"
-            : "İşlem: x";
+        feedbackText.text = firstSelected != null ? $"İlk sayı: {firstSelected.Value} | İşlem: x" : "İşlem: x";
     }
 
     public void SelectDivide()
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
         currentOperation = MathOperation.Divide;
-        feedbackText.text = firstSelected != null
-            ? $"İlk sayı: {firstSelected.Value} | İşlem: ÷"
-            : "İşlem: ÷";
+        feedbackText.text = firstSelected != null ? $"İlk sayı: {firstSelected.Value} | İşlem: ÷" : "İşlem: ÷";
     }
 
     // ──────────────────────────────────────────
@@ -317,7 +304,7 @@ public class MathRoundManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // İpucu
+    // İpucu — Akıllı İlk Adım
     // ──────────────────────────────────────────
 
     public void OnHintButton()
@@ -351,9 +338,86 @@ public class MathRoundManager : MonoBehaviour
 
     private void GiveHint()
     {
-        int closest = GetClosestValueToTarget();
-        int diff = Mathf.Abs(target - closest);
-        feedbackText.text = $"İpucu: En yakın sayı {closest} (fark: {diff})";
+        string hint = FindFirstStep(new List<int>(activeNumbers), target, bannedOperation);
+        feedbackText.text = string.IsNullOrEmpty(hint)
+            ? $"İpucu: En yakın sayı {GetClosestValueToTarget()} (fark: {Mathf.Abs(target - GetClosestValueToTarget())})"
+            : $"İpucu: {hint} ile başla!";
+    }
+
+    // ──────────────────────────────────────────
+    // İlk Adım Bulma Algoritması
+    // ──────────────────────────────────────────
+
+    private string FindFirstStep(List<int> numbers, int tgt, int banned)
+    {
+        string bestHint = null;
+        int bestDiff = int.MaxValue;
+
+        for (int i = 0; i < numbers.Count; i++)
+        {
+            for (int j = 0; j < numbers.Count; j++)
+            {
+                if (i == j) continue;
+
+                int a = numbers[i];
+                int b = numbers[j];
+
+                for (int op = 1; op <= 4; op++)
+                {
+                    if (op == banned) continue;
+                    if (!TryCalculate(a, b, op, out int result)) continue;
+
+                    List<int> remaining = new List<int>();
+                    for (int k = 0; k < numbers.Count; k++)
+                        if (k != i && k != j) remaining.Add(numbers[k]);
+                    remaining.Add(result);
+
+                    if (!CanReachTarget(remaining, tgt, banned)) continue;
+
+                    // En yakın sonucu veren adımı seç
+                    int diff = Mathf.Abs(tgt - result);
+                    if (diff < bestDiff)
+                    {
+                        bestDiff = diff;
+                        string symbol = GetOperationSymbol(op);
+                        bestHint = $"{a} {symbol} {b} = {result}";
+                    }
+                }
+            }
+        }
+        return bestHint;
+    }
+
+    private bool CanReachTarget(List<int> numbers, int tgt, int banned)
+    {
+        if (numbers.Count == 1)
+            return numbers[0] == tgt;
+
+        for (int i = 0; i < numbers.Count; i++)
+        {
+            for (int j = 0; j < numbers.Count; j++)
+            {
+                if (i == j) continue;
+
+                int a = numbers[i];
+                int b = numbers[j];
+
+                for (int op = 1; op <= 4; op++)
+                {
+                    if (op == banned) continue;
+                    if (!TryCalculate(a, b, op, out int result)) continue;
+
+                    List<int> remaining = new List<int>();
+                    for (int k = 0; k < numbers.Count; k++)
+                        if (k != i && k != j) remaining.Add(numbers[k]);
+                    remaining.Add(result);
+
+                    if (CanReachTarget(remaining, tgt, banned))
+                        return true;
+                }
+            }
+        }
+        return false;
     }
 
     // ──────────────────────────────────────────
@@ -431,6 +495,21 @@ public class MathRoundManager : MonoBehaviour
     // Yardımcılar
     // ──────────────────────────────────────────
 
+    public bool TryCalculate(int a, int b, int op, out int result)
+    {
+        result = 0;
+        switch (op)
+        {
+            case 1: result = a + b; return true;
+            case 2: result = a - b; return result > 0;
+            case 3: result = a * b; return true;
+            case 4:
+                if (b == 0 || a % b != 0) return false;
+                result = a / b; return true;
+        }
+        return false;
+    }
+
     public bool TryCalculate(int a, int b, MathOperation op, out int result)
     {
         result = 0;
@@ -489,8 +568,20 @@ public class MathRoundManager : MonoBehaviour
         {
             case MathOperation.Add: return "+";
             case MathOperation.Subtract: return "-";
-            case MathOperation.Multiply: return "x";
+            case MathOperation.Multiply: return "×";
             case MathOperation.Divide: return "÷";
+            default: return "?";
+        }
+    }
+
+    private string GetOperationSymbol(int op)
+    {
+        switch (op)
+        {
+            case 1: return "+";
+            case 2: return "-";
+            case 3: return "×";
+            case 4: return "÷";
             default: return "?";
         }
     }

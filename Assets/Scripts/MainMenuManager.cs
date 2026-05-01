@@ -10,11 +10,25 @@ public class MainMenuManager : MonoBehaviour
     public GameObject aboutPopup;
     public GameObject comingSoonPopup;
 
+    [Header("Leaderboard Popup")]
+    public GameObject leaderboardPopup;
+    public Button totalScoreTabButton;
+    public Button totalStarsTabButton;
+    public Button leaderboardCloseButton;
+
+    [Header("Tab Renkleri")]
+    public Color activeTabColor = new Color(0.20f, 0.60f, 0.86f);
+    public Color inactiveTabColor = new Color(0.17f, 0.24f, 0.31f);
+
     [Header("Mağaza")]
     public ShopManager shopManager;
 
     [Header("Görevler")]
     public QuestUI questUI;
+
+    [Header("Oyuncu ID")]
+    public TMP_Text playerIdText;
+    public Button copyPlayerIdButton;
 
     [Header("Çok Yakında Popup")]
     public TMP_Text comingSoonTitleText;
@@ -56,15 +70,77 @@ public class MainMenuManager : MonoBehaviour
     {
         if (shopManager == null)
             shopManager = ShopManager.Instance;
+
         if (settingsPopup != null) settingsPopup.SetActive(false);
         if (aboutPopup != null) aboutPopup.SetActive(false);
         if (comingSoonPopup != null) comingSoonPopup.SetActive(false);
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
+
+        // Leaderboard tab butonları
+        if (totalScoreTabButton != null)
+            totalScoreTabButton.onClick.AddListener(() => ShowLeaderboardTab(0));
+        if (totalStarsTabButton != null)
+            totalStarsTabButton.onClick.AddListener(() => ShowLeaderboardTab(1));
+        if (leaderboardCloseButton != null)
+            leaderboardCloseButton.onClick.AddListener(CloseLeaderboard);
+
+        // Oyuncu ID
+        if (copyPlayerIdButton != null)
+            copyPlayerIdButton.onClick.AddListener(CopyPlayerId);
 
         isSoundOn = PlayerPrefs.GetInt(SoundKey, 1) == 1;
         isMusicOn = PlayerPrefs.GetInt(MusicKey, 1) == 1;
 
         UpdateSoundButton();
         UpdateMusicButton();
+
+        // Firebase hazır olunca ID'yi göster
+        InvokeRepeating("TryUpdatePlayerId", 1f, 1f);
+    }
+
+    // ──────────────────────────────────────────
+    // Oyuncu ID
+    // ──────────────────────────────────────────
+
+    private void TryUpdatePlayerId()
+    {
+        if (FirebaseManager.Instance == null || !FirebaseManager.Instance.IsReady()) return;
+
+        string playerId = FirebaseManager.Instance.GetPlayerId();
+        if (playerIdText != null)
+            playerIdText.text = $"ID: {ShortenId(playerId)}";
+
+        CancelInvoke("TryUpdatePlayerId");
+    }
+
+    private string ShortenId(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return "...";
+        if (id.Length <= 12) return id;
+        return id.Substring(0, 6) + "..." + id.Substring(id.Length - 4);
+    }
+
+    private void CopyPlayerId()
+    {
+        if (FirebaseManager.Instance == null) return;
+
+        string playerId = FirebaseManager.Instance.GetPlayerId();
+        GUIUtility.systemCopyBuffer = playerId;
+
+        if (playerIdText != null)
+            playerIdText.text = "Kopyalandı!";
+
+        Invoke("RestorePlayerIdText", 2f);
+
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+    }
+
+    private void RestorePlayerIdText()
+    {
+        if (FirebaseManager.Instance == null) return;
+        string playerId = FirebaseManager.Instance.GetPlayerId();
+        if (playerIdText != null)
+            playerIdText.text = $"ID: {ShortenId(playerId)}";
     }
 
     // ──────────────────────────────────────────
@@ -93,6 +169,7 @@ public class MainMenuManager : MonoBehaviour
         settingsPopup.SetActive(!isOpen);
         if (aboutPopup != null) aboutPopup.SetActive(false);
         if (comingSoonPopup != null) comingSoonPopup.SetActive(false);
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
     }
 
     public void OnAboutButton()
@@ -103,6 +180,7 @@ public class MainMenuManager : MonoBehaviour
         aboutPopup.SetActive(!isOpen);
         if (settingsPopup != null) settingsPopup.SetActive(false);
         if (comingSoonPopup != null) comingSoonPopup.SetActive(false);
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
     }
 
     public void CloseAllPopups()
@@ -111,6 +189,7 @@ public class MainMenuManager : MonoBehaviour
         if (settingsPopup != null) settingsPopup.SetActive(false);
         if (aboutPopup != null) aboutPopup.SetActive(false);
         if (comingSoonPopup != null) comingSoonPopup.SetActive(false);
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
     }
 
     // ──────────────────────────────────────────
@@ -119,10 +198,6 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnShopButton()
     {
-        Debug.Log("OnShopButton çağrıldı!");
-        Debug.Log("ShopManager.Instance: " + (ShopManager.Instance != null ? "VAR" : "NULL"));
-        Debug.Log("shopManager: " + (shopManager != null ? "VAR" : "NULL"));
-
         if (ShopManager.Instance != null)
             ShopManager.Instance.OpenShop();
         else if (shopManager != null)
@@ -149,10 +224,48 @@ public class MainMenuManager : MonoBehaviour
     public void OnLeaderboardButton()
     {
         if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
-        if (LeaderboardManager.Instance != null)
-            LeaderboardManager.Instance.ShowAllLeaderboards();
-        else
-            Debug.LogWarning("LeaderboardManager bağlı değil!");
+
+        if (leaderboardPopup == null)
+        {
+            if (LeaderboardManager.Instance != null)
+                LeaderboardManager.Instance.ShowAllLeaderboards();
+            return;
+        }
+
+        leaderboardPopup.SetActive(true);
+        if (settingsPopup != null) settingsPopup.SetActive(false);
+        if (aboutPopup != null) aboutPopup.SetActive(false);
+        if (comingSoonPopup != null) comingSoonPopup.SetActive(false);
+
+        SetTabColor(totalScoreTabButton, true);
+        SetTabColor(totalStarsTabButton, false);
+    }
+
+    public void ShowLeaderboardTab(int index)
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+
+        SetTabColor(totalScoreTabButton, index == 0);
+        SetTabColor(totalStarsTabButton, index == 1);
+
+        if (index == 0 && LeaderboardManager.Instance != null)
+            LeaderboardManager.Instance.ShowTotalScoreLeaderboard();
+        else if (index == 1 && LeaderboardManager.Instance != null)
+            LeaderboardManager.Instance.ShowTotalStarsLeaderboard();
+    }
+
+    public void CloseLeaderboard()
+    {
+        if (AudioManager.Instance != null) AudioManager.Instance.PlayClick();
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
+    }
+
+    private void SetTabColor(Button button, bool isActive)
+    {
+        if (button == null) return;
+        Image img = button.GetComponent<Image>();
+        if (img != null)
+            img.color = isActive ? activeTabColor : inactiveTabColor;
     }
 
     // ──────────────────────────────────────────
@@ -164,6 +277,7 @@ public class MainMenuManager : MonoBehaviour
         if (comingSoonPopup == null) return;
         if (settingsPopup != null) settingsPopup.SetActive(false);
         if (aboutPopup != null) aboutPopup.SetActive(false);
+        if (leaderboardPopup != null) leaderboardPopup.SetActive(false);
 
         if (comingSoonTitleText != null)
             comingSoonTitleText.text = $"{featureName}\nÇok Yakında!";
@@ -181,7 +295,6 @@ public class MainMenuManager : MonoBehaviour
         PlayerPrefs.SetInt(SoundKey, isSoundOn ? 1 : 0);
         PlayerPrefs.Save();
         UpdateSoundButton();
-
         if (AudioManager.Instance != null)
             AudioManager.Instance.SetSound(isSoundOn);
     }
@@ -189,11 +302,7 @@ public class MainMenuManager : MonoBehaviour
     private void UpdateSoundButton()
     {
         if (soundButtonImage == null) return;
-
-        if (isSoundOn && soundOnSprite != null)
-            soundButtonImage.sprite = soundOnSprite;
-        else if (!isSoundOn && soundOffSprite != null)
-            soundButtonImage.sprite = soundOffSprite;
+        soundButtonImage.sprite = isSoundOn ? soundOnSprite : soundOffSprite;
     }
 
     // ──────────────────────────────────────────
@@ -206,7 +315,6 @@ public class MainMenuManager : MonoBehaviour
         PlayerPrefs.SetInt(MusicKey, isMusicOn ? 1 : 0);
         PlayerPrefs.Save();
         UpdateMusicButton();
-
         if (AudioManager.Instance != null)
             AudioManager.Instance.SetMusic(isMusicOn);
     }
@@ -214,11 +322,7 @@ public class MainMenuManager : MonoBehaviour
     private void UpdateMusicButton()
     {
         if (musicButtonImage == null) return;
-
-        if (isMusicOn && musicOnSprite != null)
-            musicButtonImage.sprite = musicOnSprite;
-        else if (!isMusicOn && musicOffSprite != null)
-            musicButtonImage.sprite = musicOffSprite;
+        musicButtonImage.sprite = isMusicOn ? musicOnSprite : musicOffSprite;
     }
 
     // ──────────────────────────────────────────
@@ -236,7 +340,14 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnSupportButton()
     {
-        Application.OpenURL("mailto:" + supportEmail + "?subject=Destek Talebi - Zihin Arenasi");
+        string playerId = FirebaseManager.Instance != null
+            ? FirebaseManager.Instance.GetPlayerId()
+            : "unknown";
+
+        string subject = "Destek Talebi - Zihin Arenasi";
+        string body = $"Oyuncu ID: {playerId}%0A%0ASorunum:%0A";
+
+        Application.OpenURL($"mailto:{supportEmail}?subject={subject}&body={body}");
     }
 
     public void OnPrivacyPolicyButton() { Application.OpenURL(privacyPolicyURL); }

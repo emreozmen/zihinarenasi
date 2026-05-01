@@ -119,6 +119,10 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
         storeController = controller;
         extensionProvider = extensions;
         Debug.Log("IAP başarıyla başlatıldı.");
+
+        // Ürünleri listele
+        foreach (var product in controller.products.all)
+            Debug.Log($"Ürün: {product.definition.id} | Mevcut: {product.availableToPurchase}");
     }
 
     public void OnInitializeFailed(InitializationFailureReason error)
@@ -158,12 +162,11 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
         else if (productId == ProductLivesPack)
         {
             if (LivesManager.Instance != null)
-                LivesManager.Instance.SetFullLives();
+                LivesManager.Instance.AddPurchasedLives(5);
 
             Debug.Log("5 can eklendi!");
 
-            // Panelleri gizle
-            UIManager uiManager = UnityEngine.Object.FindObjectOfType<UIManager>();
+            UIManager uiManager = FindObjectOfType<UIManager>();
             if (uiManager != null) uiManager.HideAllPanels();
 
             if (ShopManager.Instance != null)
@@ -171,11 +174,18 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
 
             ChapterManager.ReloadCurrentScene();
         }
-
         else if (productId == ProductSupport)
         {
             Debug.Log("Geliştirici desteklendi, teşekkürler!");
         }
+
+        // Firebase'e satın alma logunu kaydet
+        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
+            FirebaseManager.Instance.LogPurchase(productId);
+
+        // Firebase'e oyuncu verilerini güncelle
+        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
+            FirebaseManager.Instance.SavePlayerData();
 
         return PurchaseProcessingResult.Complete;
     }

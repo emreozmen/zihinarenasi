@@ -32,7 +32,7 @@ public class LevelData
     // Boss Level
     public bool isBossLevel;
 
-    // Seed kelimeyi göster (Bölüm 1)
+    // Seed kelimeyi göster
     public bool showSeedWordHint;
 }
 
@@ -41,11 +41,9 @@ public static class LevelDatabase
     public static LevelData GetLevelData(int globalLevel)
     {
         globalLevel = Mathf.Max(1, globalLevel);
-
         int chapter = ChapterManager.GetChapter(globalLevel);
         int levelInChapter = ChapterManager.GetLevelInChapter(globalLevel);
         bool isBossLevel = levelInChapter == 10;
-
         float chapterProgress = (levelInChapter - 1) / (float)(ChapterManager.LevelsPerChapter - 1);
 
         LevelData data = new LevelData
@@ -61,7 +59,7 @@ public static class LevelDatabase
             maxOperationSteps = 0,
             hasSpeedBonus = false,
             speedBonusThreshold = 0.5f,
-            showSeedWordHint = false
+            showSeedWordHint = true  // Tüm bölümlerde açık!
         };
 
         if (isBossLevel)
@@ -84,7 +82,6 @@ public static class LevelDatabase
                 data.mathTargetMin = 100;
                 data.mathTargetMax = Mathf.RoundToInt(Mathf.Lerp(200f, 350f, chapterProgress));
                 data.bigNumberCount = 2;
-                data.showSeedWordHint = true;   // Seed kelime ipucu aktif!
                 break;
 
             // ─────────────────────────────────────────
@@ -158,6 +155,8 @@ public static class LevelDatabase
 
     private static void SetBossLevelData(LevelData data, int chapter)
     {
+        data.showSeedWordHint = true; // Boss levellarda da açık
+
         switch (chapter)
         {
             case 1:

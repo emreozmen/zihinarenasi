@@ -5,7 +5,8 @@ public class LivesManager : MonoBehaviour
 {
     public static LivesManager Instance;
 
-    public const int MaxLives = 5;
+    public const int MaxLives = 5;  // Yenileme ile dolan maksimum
+    public const int AbsoluteMax = 99; // Satın alınan canlarla ulaşılabilecek maksimum
 
     // 1. can: 5 dk, 2-5. canlar: 15 dk
     private static readonly int[] RechargeMinutes = { 5, 15, 15, 15, 15 };
@@ -62,7 +63,8 @@ public class LivesManager : MonoBehaviour
         int newCount = current - 1;
         PlayerPrefs.SetInt(LivesKey, newCount);
 
-        if (!PlayerPrefs.HasKey(LastLostTimeKey))
+        // Zamanlayıcıyı sadece MaxLives veya altına düşünce başlat
+        if (current <= MaxLives && !PlayerPrefs.HasKey(LastLostTimeKey))
             PlayerPrefs.SetString(LastLostTimeKey, DateTime.UtcNow.ToString("o"));
 
         PlayerPrefs.Save();
@@ -73,7 +75,7 @@ public class LivesManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // Can Ekle
+    // Can Ekle (Reklam veya Normal)
     // ──────────────────────────────────────────
 
     public void AddLife(int amount = 1)
@@ -87,6 +89,30 @@ public class LivesManager : MonoBehaviour
 
         PlayerPrefs.Save();
         Debug.Log($"Can eklendi. Toplam: {newCount}");
+
+        UIManager uiManager = FindObjectOfType<UIManager>();
+        if (uiManager != null) uiManager.UpdateLivesDisplay();
+
+        if (NotificationManager.Instance != null)
+            NotificationManager.Instance.CancelLivesNotification();
+    }
+
+    // ──────────────────────────────────────────
+    // Can Ekle (Satın Alma) — MaxLives'ın üstüne çıkabilir
+    // ──────────────────────────────────────────
+
+    public void AddPurchasedLives(int amount = 5)
+    {
+        int current = GetLives();
+        int newCount = Mathf.Min(current + amount, AbsoluteMax);
+        PlayerPrefs.SetInt(LivesKey, newCount);
+
+        // Satın alınan canlar MaxLives'ın üstündeyse zamanlayıcıyı sil
+        if (newCount > MaxLives)
+            PlayerPrefs.DeleteKey(LastLostTimeKey);
+
+        PlayerPrefs.Save();
+        Debug.Log($"Satın alınan can eklendi. Toplam: {newCount}");
 
         UIManager uiManager = FindObjectOfType<UIManager>();
         if (uiManager != null) uiManager.UpdateLivesDisplay();
@@ -109,12 +135,14 @@ public class LivesManager : MonoBehaviour
     }
 
     // ──────────────────────────────────────────
-    // Kademeli Yenileme
+    // Kademeli Yenileme — Sadece MaxLives altında çalışır
     // ──────────────────────────────────────────
 
     public void RechargeIfNeeded()
     {
         int current = PlayerPrefs.GetInt(LivesKey, MaxLives);
+
+        // MaxLives veya üstündeyse yenileme yapma
         if (current >= MaxLives) return;
 
         string lastLostStr = PlayerPrefs.GetString(LastLostTimeKey, "");
@@ -127,12 +155,9 @@ public class LivesManager : MonoBehaviour
         int livesToAdd = 0;
         double usedMinutes = 0;
 
-        for (int i = 0; i < MaxLives - current; i++)
+        for (int i = current; i < MaxLives; i++)
         {
-            int idx = MaxLives - current - 1 - i;
-            if (idx < 0) break;
-            int needed = RechargeMinutes[idx];
-
+            int needed = RechargeMinutes[i];
             if (minutesPassed >= usedMinutes + needed)
             {
                 usedMinutes += needed;
@@ -165,30 +190,21 @@ public class LivesManager : MonoBehaviour
     public TimeSpan GetTimeUntilNextLife()
     {
         int current = PlayerPrefs.GetInt(LivesKey, MaxLives);
-        Debug.Log($"GetTimeUntilNextLife — Lives: {current}");
 
+        // MaxLives veya üstündeyse yenileme yok
         if (current >= MaxLives) return TimeSpan.Zero;
 
         string lastLostStr = PlayerPrefs.GetString(LastLostTimeKey, "");
-        Debug.Log($"LastLostTime: '{lastLostStr}'");
-
         if (string.IsNullOrEmpty(lastLostStr)) return TimeSpan.Zero;
 
         if (!DateTime.TryParse(lastLostStr, out DateTime lastLost)) return TimeSpan.Zero;
 
         double minutesPassed = (DateTime.UtcNow - lastLost).TotalMinutes;
-        Debug.Log($"Geçen dakika: {minutesPassed:F2}");
 
-        // Bir sonraki can için gereken indeks
-        int idx = MaxLives - current - 1;
-        Debug.Log($"Recharge index: {idx} | Needed minutes: {(idx >= 0 && idx < RechargeMinutes.Length ? RechargeMinutes[idx] : -1)}");
+        if (current < 0 || current >= RechargeMinutes.Length) return TimeSpan.Zero;
 
-        if (idx < 0 || idx >= RechargeMinutes.Length) return TimeSpan.Zero;
-
-        int needed = RechargeMinutes[idx];
+        int needed = RechargeMinutes[current];
         double remaining = needed - minutesPassed;
-
-        Debug.Log($"Kalan dakika: {remaining:F2}");
 
         return remaining > 0 ? TimeSpan.FromMinutes(remaining) : TimeSpan.Zero;
     }
@@ -203,12 +219,9 @@ public class LivesManager : MonoBehaviour
         if (current >= MaxLives) return 0;
 
         int total = 0;
-        for (int i = 0; i < MaxLives - current; i++)
-        {
-            int idx = MaxLives - current - 1 - i;
-            if (idx >= 0 && idx < RechargeMinutes.Length)
-                total += RechargeMinutes[idx];
-        }
+        for (int i = current; i < MaxLives; i++)
+            total += RechargeMinutes[i];
+
         return total;
     }
 

@@ -192,6 +192,10 @@ public class GameManager : MonoBehaviour
 
         ChapterManager.SaveStars(CurrentLevel, stars);
 
+        // Firebase'e kaydet
+        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
+            FirebaseManager.Instance.SavePlayerData();
+
         if (AudioManager.Instance != null)
         {
             if (levelPassed) AudioManager.Instance.PlayLevelComplete();
@@ -236,6 +240,9 @@ public class GameManager : MonoBehaviour
         int nextChapter = ChapterManager.GetChapter(nextLevel);
 
         ChapterManager.SaveCurrentLevel(nextLevel);
+
+        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
+            FirebaseManager.Instance.SavePlayerData();
 
         if (nextChapter != currentChapter)
             ChapterManager.LoadChapterScene(nextChapter);
