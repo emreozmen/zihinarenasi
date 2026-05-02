@@ -37,71 +37,30 @@ public class iOSPostBuild
         proj.AddFile(entitlementsFileName, entitlementsFileName);
         proj.SetBuildProperty(mainTargetGuid, "CODE_SIGN_ENTITLEMENTS", entitlementsFileName);
 
-        // ── Firebase SPM fix: xcconfig dosyasi olustur ──
-        // Cloud Build, pbxproj'daki DEVELOPMENT_TEAM satirlarini sed ile siler.
-        // Ama xcconfig dosyasina dokunamaz. Xcode oradan okur.
-        // baseConfigurationReference satiri DEVELOPMENT_TEAM icermez → sed silemez.
-        string xcconfigFileName = "CloudBuildSPMFix.xcconfig";
-        string xcconfigFilePath = Path.Combine(path, xcconfigFileName);
-        File.WriteAllText(xcconfigFilePath,
-            "// Firebase SPM signing fix - Cloud Build sed bu dosyaya dokunamaz\n" +
-            "DEVELOPMENT_TEAM = " + DevelopmentTeamId + "\n");
-
-        string xcconfigGuid = proj.AddFile(xcconfigFileName, xcconfigFileName, PBXSourceTree.Source);
-
         // Framework icin signing kapat
         proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_REQUIRED", "NO");
         proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_ALLOWED",  "NO");
 
-        // Projeyi diske yaz
         proj.WriteToFile(projPath);
 
-        // ── pbxproj'a xcconfig referansini elle ekle ──
-        // SetBaseReferenceForBuildConfig Unity 6'da yok, dogrudan text manipulation yapiyoruz.
-        // "baseConfigurationReference = GUID;" satiri DEVELOPMENT_TEAM icermez → sed bunu silmez.
-        string[] targetGuids = { mainTargetGuid, frameworkTargetGuid };
-        string[] configNames = { "Release", "Debug", "ReleaseForRunning", "ReleaseForProfiling" };
+        // ── Firebase SPM signing fix: Gymfile ──
+        // SPM paketleri (GoogleUtilities, Firebase) ayri Xcode projelerinde oldugu icin
+        // pbxproj veya xcconfig degisiklikleri onlara ulasmiyor.
+        // Cloud Build fastlane kullanir; proje dizininde Gymfile varsa xcargs'i okur.
+        // xcargs ile DEVELOPMENT_TEAM tum targetlara (SPM dahil) komut satirindan gecilir.
+        // Cloud Build'in sed'i pbxproj'u temizler ama komut satiri argumanlarina dokunamaz.
+        string gymfilePath = Path.Combine(path, "Gymfile");
+        // Eger Gymfile zaten varsa uzerine yazma, xcargs satiri ekle
+        string gymfileContent = "";
+        if (File.Exists(gymfilePath))
+            gymfileContent = File.ReadAllText(gymfilePath);
 
-        string projContent = File.ReadAllText(projPath);
-        bool modified = false;
-
-        foreach (string tGuid in targetGuids)
+        if (!gymfileContent.Contains("DEVELOPMENT_TEAM"))
         {
-            foreach (string cfgName in configNames)
-            {
-                string cfgGuid = proj.BuildConfigByName(tGuid, cfgName);
-                if (string.IsNullOrEmpty(cfgGuid)) continue;
-
-                // Bu config'in section'ini bul: "GUID /* cfgName */ = {"
-                string sectionHeader = cfgGuid + " /* " + cfgName + " */ = {";
-                int secStart = projContent.IndexOf(sectionHeader);
-                if (secStart < 0) continue;
-
-                // Section bitis: ilk "};"
-                int secEnd = projContent.IndexOf("};", secStart);
-                if (secEnd < 0) continue;
-
-                // Zaten xcconfig referansi varsa atla
-                string section = projContent.Substring(secStart, secEnd - secStart);
-                if (section.Contains("baseConfigurationReference")) continue;
-
-                // "isa = XCBuildConfiguration;" sonrasina ekle
-                string isaMarker = "isa = XCBuildConfiguration;";
-                int isaIdx = projContent.IndexOf(isaMarker, secStart);
-                if (isaIdx < 0 || isaIdx > secEnd) continue;
-
-                string insertion = "\n\t\tbaseConfigurationReference = "
-                                 + xcconfigGuid
-                                 + " /* " + xcconfigFileName + " */;";
-                projContent = projContent.Insert(isaIdx + isaMarker.Length, insertion);
-                modified = true;
-            }
-        }
-
-        if (modified)
-        {
-            File.WriteAllText(projPath, projContent);
-            Debug.Log("[iOSPostBuild] xcconfig base referans eklendi (Firebase SPM DEVELOPMENT_TEAM fix).");
+            gymfileContent += "\n# Firebase SPM signing fix\n"
+                           + "xcargs \"DEVELOPMENT_TEAM=" + DevelopmentTeamId + "\"\n";
+            File.WriteAllText(gymfilePath, gymfileContent);
+            Debug.Log("[iOSPostBuild] Gymfile'a DEVELOPMENT_TEAM xcargs eklendi.");
         }
 
         // ── Info.plist ──
