@@ -7,13 +7,25 @@ workflows:
       groups:
         - unity_credentials
         - ios_credentials
-      unity: 6000.4.5f1
       vars:
+        UNITY_VERSION: 6000.4.5f1
+        UNITY_VERSION_CHANGESET: cc83ebd631f8
         BUNDLE_ID: com.zihinarenasi.zihinarenasi
         XCODE_WORKSPACE: Unity-iPhone.xcworkspace
         XCODE_SCHEME: Unity-iPhone
         DEVELOPMENT_TEAM: H66NL7YDHZ
     scripts:
+      - name: Install Unity
+        script: |
+          /Applications/Unity\ Hub/Unity\ Hub.app/Contents/MacOS/Unity\ Hub -- \
+            --headless install \
+            --version $UNITY_VERSION \
+            --changeset $UNITY_VERSION_CHANGESET
+          /Applications/Unity\ Hub/Unity\ Hub.app/Contents/MacOS/Unity\ Hub -- \
+            --headless install-modules \
+            --version $UNITY_VERSION \
+            --module ios
+          echo "UNITY_HOME=/Applications/Unity/Hub/Editor/$UNITY_VERSION/Unity.app" >> $CM_ENV
       - name: Activate Unity License
         script: |
           echo "$UNITY_LICENSE" > /tmp/Unity_lic.ulf
