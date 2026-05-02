@@ -72,6 +72,13 @@ workflows:
           xcode-project use-profiles
       - name: Build Xcode project
         script: |
+          echo "=== Listing ios/ directory ==="
+          ls -la ios/ || echo "ios/ not found"
+          echo "=== Finding .xcworkspace files ==="
+          find . -name "*.xcworkspace" -not -path "*/.*" 2>/dev/null
+          echo "=== Finding .xcodeproj files ==="
+          find . -name "*.xcodeproj" -not -path "*/.*" 2>/dev/null
+
           xcode-project build-ipa \
             --workspace ios/Unity-iPhone.xcworkspace \
             --scheme Unity-iPhone \
