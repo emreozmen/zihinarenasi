@@ -16,15 +16,17 @@ public class iOSPostBuild
         if (target != BuildTarget.iOS) return;
 
 #if UNITY_EDITOR && UNITY_IOS
-        // ── PBX Project: Game Center entitlement ──
+        // ── PBX Project ──
         string projPath = PBXProject.GetPBXProjectPath(path);
         var proj = new PBXProject();
         proj.ReadFromFile(projPath);
 
-        string targetGuid = proj.GetUnityMainTargetGuid();
+        string mainTargetGuid = proj.GetUnityMainTargetGuid();
+        string frameworkTargetGuid = proj.GetUnityFrameworkTargetGuid();
 
-        string entitlementsPath = "GameCenter.entitlements";
-        string fullEntitlementsPath = Path.Combine(path, entitlementsPath);
+        // Game Center entitlement
+        string entitlementsFileName = "GameCenter.entitlements";
+        string fullEntitlementsPath = Path.Combine(path, entitlementsFileName);
 
         File.Copy(
             Path.Combine(Application.dataPath, "GameCenter.entitlements"),
@@ -32,26 +34,37 @@ public class iOSPostBuild
             true
         );
 
-        proj.AddFile(entitlementsPath, entitlementsPath);
-        proj.AddBuildProperty(targetGuid, "CODE_SIGN_ENTITLEMENTS", entitlementsPath);
+        proj.AddFile(entitlementsFileName, entitlementsFileName);
+        // SetBuildProperty kullan - AddBuildProperty mevcut degere ekler (bug!)
+        proj.SetBuildProperty(mainTargetGuid, "CODE_SIGN_ENTITLEMENTS", entitlementsFileName);
+
+        // Firebase / SPM paketleri icin signing sorununu coz:
+        // Tum target'larda CODE_SIGNING_REQUIRED = NO yap (main ve framework haric)
+        foreach (string targetGuid in proj.GetAllTargetGuids())
+        {
+            if (targetGuid == mainTargetGuid || targetGuid == frameworkTargetGuid)
+                continue;
+
+            proj.SetBuildProperty(targetGuid, "CODE_SIGNING_REQUIRED", "NO");
+            proj.SetBuildProperty(targetGuid, "CODE_SIGNING_ALLOWED", "NO");
+        }
+
         proj.WriteToFile(projPath);
+        Debug.Log("Game Center entitlement eklendi, Firebase SPM signing duzeltildi.");
 
-        Debug.Log("Game Center entitlement eklendi.");
-
-        // ── Info.plist: ATT + AdMob ──
+        // ── Info.plist ──
         string plistPath = Path.Combine(path, "Info.plist");
         var plist = new PlistDocument();
         plist.ReadFromFile(plistPath);
 
         PlistElementDict root = plist.root;
 
-        // iOS 14+ App Tracking Transparency - AdMob için zorunlu
+        // iOS 14+ App Tracking Transparency
         root.SetString("NSUserTrackingUsageDescription",
-            "Zihin Arenası, sana daha alakalı reklamlar gösterebilmek için reklam verilerini kullanmak istiyor.");
+            "Zihin Arenasi, sana daha alakali reklamlar gosterebilmek icin reklam verilerini kullanmak istiyor.");
 
         plist.WriteToFile(plistPath);
-
-        Debug.Log("Info.plist güncellendi: NSUserTrackingUsageDescription eklendi.");
+        Debug.Log("Info.plist guncellendi.");
 #endif
     }
 }
