@@ -21,7 +21,7 @@ public class iOSPostBuild
         var proj = new PBXProject();
         proj.ReadFromFile(projPath);
 
-        string mainTargetGuid = proj.GetUnityMainTargetGuid();
+        string mainTargetGuid      = proj.GetUnityMainTargetGuid();
         string frameworkTargetGuid = proj.GetUnityFrameworkTargetGuid();
 
         // Game Center entitlement
@@ -35,22 +35,15 @@ public class iOSPostBuild
         );
 
         proj.AddFile(entitlementsFileName, entitlementsFileName);
-        // SetBuildProperty kullan - AddBuildProperty mevcut degere ekler (bug!)
         proj.SetBuildProperty(mainTargetGuid, "CODE_SIGN_ENTITLEMENTS", entitlementsFileName);
 
-        // Firebase / SPM paketleri icin signing sorununu coz:
-        // Tum target'larda CODE_SIGNING_REQUIRED = NO yap (main ve framework haric)
-        foreach (string targetGuid in proj.GetAllTargetGuids())
-        {
-            if (targetGuid == mainTargetGuid || targetGuid == frameworkTargetGuid)
-                continue;
-
-            proj.SetBuildProperty(targetGuid, "CODE_SIGNING_REQUIRED", "NO");
-            proj.SetBuildProperty(targetGuid, "CODE_SIGNING_ALLOWED", "NO");
-        }
+        // Firebase / SPM paketleri icin signing sorununu coz
+        // UnityFramework altindaki tum bagimliliklara (GoogleUtilities vb.) uygulanir
+        proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_REQUIRED", "NO");
+        proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_ALLOWED",  "NO");
 
         proj.WriteToFile(projPath);
-        Debug.Log("Game Center entitlement eklendi, Firebase SPM signing duzeltildi.");
+        Debug.Log("Game Center entitlement eklendi, Firebase signing duzeltildi.");
 
         // ── Info.plist ──
         string plistPath = Path.Combine(path, "Info.plist");
