@@ -21,15 +21,17 @@ workflows:
           UNITY_HUB_PATH=$(find /Applications -name "Unity Hub" -type f 2>/dev/null | head -1)
           echo "Unity Hub found at: $UNITY_HUB_PATH"
 
-          # Install Unity editor
+          # Install Unity editor (arm64 for Apple Silicon / mac_mini_m2)
           "$UNITY_HUB_PATH" -- --headless install \
             --version $UNITY_VERSION \
-            --changeset $UNITY_VERSION_CHANGESET
+            --changeset $UNITY_VERSION_CHANGESET \
+            --architecture arm64
 
           # Install iOS module
           "$UNITY_HUB_PATH" -- --headless install-modules \
             --version $UNITY_VERSION \
-            --module ios
+            --module ios \
+            --architecture arm64
 
           # Find actual Unity installation path
           echo "=== Searching for Unity installation ==="
