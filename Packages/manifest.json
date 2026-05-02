@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.google.play.games": "file:C:/Users/mehme/Desktop/play-games-plugin-for-unity-2.1.0/Assets/Public/GooglePlayGames/com.google.play.games",
+    "com.google.play.games": "file:../Packages/com.google.play.games",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.device-simulator.devices": "1.0.1",
