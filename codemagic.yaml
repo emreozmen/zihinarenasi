@@ -53,6 +53,11 @@ workflows:
           cat /tmp/unity_activate.log || true
       - name: Build Unity iOS
         script: |
+          echo "=== Working directory ==="
+          pwd
+          echo "=== Project files ==="
+          ls -la
+          echo "=== Running Unity build ==="
           $UNITY_HOME/Contents/MacOS/Unity \
             -batchmode \
             -quit \
@@ -61,7 +66,13 @@ workflows:
             -buildTarget iOS \
             -executeMethod BuildScript.BuildIOS \
             -nographics
-          cat /tmp/unity_build.log || true
+          BUILD_EXIT=$?
+          echo "=== Unity exit code: $BUILD_EXIT ==="
+          echo "=== Unity build log ==="
+          cat /tmp/unity_build.log || echo "No log file found"
+          echo "=== Output directory ==="
+          ls -la ios/ 2>/dev/null || echo "ios/ not created"
+          exit $BUILD_EXIT
       - name: Set up code signing
         script: |
           keychain initialize
