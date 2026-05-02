@@ -10,6 +10,9 @@ using UnityEditor.iOS.Xcode;
 
 public class iOSPostBuild
 {
+    // Apple Developer Team ID (Apple Distribution sertifikasindaki parantez icindeki kod)
+    private const string DevelopmentTeamId = "H66NL7YDHZ";
+
     [PostProcessBuild(999)]
     public static void OnPostProcessBuild(BuildTarget target, string path)
     {
@@ -24,40 +27,60 @@ public class iOSPostBuild
         string mainTargetGuid      = proj.GetUnityMainTargetGuid();
         string frameworkTargetGuid = proj.GetUnityFrameworkTargetGuid();
 
-        // Game Center entitlement
+        // ── Game Center entitlement ──
         string entitlementsFileName = "GameCenter.entitlements";
         string fullEntitlementsPath = Path.Combine(path, entitlementsFileName);
-
         File.Copy(
             Path.Combine(Application.dataPath, "GameCenter.entitlements"),
             fullEntitlementsPath,
             true
         );
-
         proj.AddFile(entitlementsFileName, entitlementsFileName);
         proj.SetBuildProperty(mainTargetGuid, "CODE_SIGN_ENTITLEMENTS", entitlementsFileName);
 
-        // Firebase / SPM paketleri icin signing sorununu coz
-        // UnityFramework altindaki tum bagimliliklara (GoogleUtilities vb.) uygulanir
+        // ── Firebase / GoogleUtilities SPM signing fix ──
+        // Cloud Build, pbxproj'daki DEVELOPMENT_TEAM satirlarini sed ile siliyor.
+        // xcconfig dosyasina yazarsak sed dokunamaz; Xcode oradan okur.
+        // SPM paketleri (GoogleUtilities vb.) bu sayede DEVELOPMENT_TEAM'i bulur.
+        string xcconfigContent = "// Cloud Build Firebase SPM signing fix\n"
+                               + "DEVELOPMENT_TEAM = " + DevelopmentTeamId + "\n";
+        string xcconfigFileName = "CloudBuildSPMFix.xcconfig";
+        string xcconfigFilePath = Path.Combine(path, xcconfigFileName);
+        File.WriteAllText(xcconfigFilePath, xcconfigContent);
+
+        string xcconfigGuid = proj.AddFile(xcconfigFileName, xcconfigFileName, PBXSourceTree.Source);
+
+        // Release config'e base xcconfig olarak ata
+        foreach (string configName in new[] { "Release", "Debug", "ReleaseForRunning", "ReleaseForProfiling" })
+        {
+            string configGuid = proj.BuildConfigByName(mainTargetGuid, configName);
+            if (!string.IsNullOrEmpty(configGuid))
+                proj.SetBaseReferenceForBuildConfig(configGuid, xcconfigGuid);
+
+            string fwConfigGuid = proj.BuildConfigByName(frameworkTargetGuid, configName);
+            if (!string.IsNullOrEmpty(fwConfigGuid))
+                proj.SetBaseReferenceForBuildConfig(fwConfigGuid, xcconfigGuid);
+        }
+
+        // Framework target'ta signing gerektirme (Firebase bagimliliklari icin)
         proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_REQUIRED", "NO");
         proj.SetBuildProperty(frameworkTargetGuid, "CODE_SIGNING_ALLOWED",  "NO");
 
         proj.WriteToFile(projPath);
-        Debug.Log("Game Center entitlement eklendi, Firebase signing duzeltildi.");
+        Debug.Log("[iOSPostBuild] Game Center entitlement + Firebase SPM fix uygulandı.");
 
         // ── Info.plist ──
         string plistPath = Path.Combine(path, "Info.plist");
         var plist = new PlistDocument();
         plist.ReadFromFile(plistPath);
-
         PlistElementDict root = plist.root;
 
-        // iOS 14+ App Tracking Transparency
+        // iOS 14+ App Tracking Transparency (AdMob zorunlu)
         root.SetString("NSUserTrackingUsageDescription",
             "Zihin Arenasi, sana daha alakali reklamlar gosterebilmek icin reklam verilerini kullanmak istiyor.");
 
         plist.WriteToFile(plistPath);
-        Debug.Log("Info.plist guncellendi.");
+        Debug.Log("[iOSPostBuild] Info.plist güncellendi.");
 #endif
     }
 }
