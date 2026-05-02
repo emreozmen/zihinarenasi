@@ -90,7 +90,7 @@ public class LivesManager : MonoBehaviour
         PlayerPrefs.Save();
         Debug.Log($"Can eklendi. Toplam: {newCount}");
 
-        UIManager uiManager = FindObjectOfType<UIManager>();
+        UIManager uiManager = FindFirstObjectByType<UIManager>();
         if (uiManager != null) uiManager.UpdateLivesDisplay();
 
         if (NotificationManager.Instance != null)
@@ -114,7 +114,7 @@ public class LivesManager : MonoBehaviour
         PlayerPrefs.Save();
         Debug.Log($"Satın alınan can eklendi. Toplam: {newCount}");
 
-        UIManager uiManager = FindObjectOfType<UIManager>();
+        UIManager uiManager = FindFirstObjectByType<UIManager>();
         if (uiManager != null) uiManager.UpdateLivesDisplay();
 
         if (NotificationManager.Instance != null)
@@ -127,7 +127,7 @@ public class LivesManager : MonoBehaviour
         PlayerPrefs.DeleteKey(LastLostTimeKey);
         PlayerPrefs.Save();
 
-        UIManager uiManager = FindObjectOfType<UIManager>();
+        UIManager uiManager = FindFirstObjectByType<UIManager>();
         if (uiManager != null) uiManager.UpdateLivesDisplay();
 
         if (NotificationManager.Instance != null)

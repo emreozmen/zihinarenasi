@@ -1,40 +1,31 @@
 using System;
 using UnityEngine;
-using UnityEngine.Advertisements;
+using GoogleMobileAds.Api;
 
-public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityAdsLoadListener, IUnityAdsShowListener
+public class AdManager : MonoBehaviour
 {
     public static AdManager Instance;
 
-    // ──────────────────────────────────────────
-    // Game ID'ler
-    // ──────────────────────────────────────────
-
 #if UNITY_ANDROID
-    private const string GameId = "6101063";
-    private const string InterstitialId = "Interstitial_Android";
-    private const string RewardedId = "Rewarded_Android";
-    private const string BannerId = "Banner_Android";
+    private const string BannerId       = "ca-app-pub-3794471707334842/4323640032";
+    private const string InterstitialId = "ca-app-pub-3794471707334842/4620567249";
+    private const string RewardedId     = "ca-app-pub-3794471707334842/5278775892";
 #elif UNITY_IOS
-    private const string GameId         = "6101062";
-    private const string InterstitialId = "Interstitial_iOS";
-    private const string RewardedId     = "Rewarded_iOS";
-    private const string BannerId       = "Banner_iOS";
+    private const string BannerId       = "ca-app-pub-3794471707334842/3323075638";
+    private const string InterstitialId = "ca-app-pub-3794471707334842/5797650640";
+    private const string RewardedId     = "ca-app-pub-3794471707334842/1802565316";
 #else
-    private const string GameId         = "6101063";
-    private const string InterstitialId = "Interstitial_Android";
-    private const string RewardedId     = "Rewarded_Android";
-    private const string BannerId       = "Banner_Android";
+    private const string BannerId       = "ca-app-pub-3794471707334842/4323640032";
+    private const string InterstitialId = "ca-app-pub-3794471707334842/4620567249";
+    private const string RewardedId     = "ca-app-pub-3794471707334842/5278775892";
 #endif
 
-    private bool isInitialized = false;
-    private bool interstitialReady = false;
-    private bool rewardedReady = false;
+    private BannerView bannerView;
+    private InterstitialAd interstitialAd;
+    private RewardedAd rewardedAd;
 
     private Action onInterstitialClosed;
     private Action onRewardEarned;
-
-    private BannerLoadOptions bannerLoadOptions;
 
     // ──────────────────────────────────────────
     // Başlangıç
@@ -56,8 +47,13 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     private void Start()
     {
-        // true = test modu
-        Advertisement.Initialize(GameId, false, this);
+        MobileAds.Initialize(_ =>
+        {
+            Debug.Log("AdMob başlatıldı.");
+            LoadInterstitial();
+            LoadRewarded();
+            LoadBanner();
+        });
     }
 
     private void OnEnable()
@@ -72,26 +68,7 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
     {
-        if (isInitialized)
-            ShowBanner();
-    }
-
-    // ──────────────────────────────────────────
-    // Initialization Callbacks
-    // ──────────────────────────────────────────
-
-    public void OnInitializationComplete()
-    {
-        isInitialized = true;
-        Debug.Log("Unity Ads başlatıldı.");
-        LoadInterstitial();
-        LoadRewarded();
-        LoadBanner();
-    }
-
-    public void OnInitializationFailed(UnityAdsInitializationError error, string message)
-    {
-        Debug.LogError($"Unity Ads başlatılamadı: {error} - {message}");
+        ShowBanner();
     }
 
     // ──────────────────────────────────────────
@@ -100,41 +77,20 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     private void LoadBanner()
     {
-        bannerLoadOptions = new BannerLoadOptions
-        {
-            loadCallback = OnBannerLoaded,
-            errorCallback = OnBannerError
-        };
-        Advertisement.Banner.SetPosition(BannerPosition.BOTTOM_CENTER);
-        Advertisement.Banner.Load(BannerId, bannerLoadOptions);
-    }
-
-    private void OnBannerLoaded()
-    {
-        Debug.Log("Banner yüklendi.");
-        ShowBanner();
-    }
-
-    private void OnBannerError(string message)
-    {
-        Debug.LogWarning("Banner yüklenemedi: " + message);
+        bannerView?.Destroy();
+        bannerView = new BannerView(BannerId, AdSize.Banner, AdPosition.Bottom);
+        bannerView.LoadAd(new AdRequest());
     }
 
     public void ShowBanner()
     {
-        if (!isInitialized) return;
-
-        var showOptions = new BannerOptions
-        {
-            showCallback = () => Debug.Log("Banner gösterildi."),
-            hideCallback = () => Debug.Log("Banner gizlendi.")
-        };
-        Advertisement.Banner.Show(BannerId, showOptions);
+        if (IsAdsRemoved()) { HideBanner(); return; }
+        bannerView?.Show();
     }
 
     public void HideBanner()
     {
-        Advertisement.Banner.Hide();
+        bannerView?.Hide();
     }
 
     // ──────────────────────────────────────────
@@ -143,28 +99,40 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     private void LoadInterstitial()
     {
-        interstitialReady = false;
-        Advertisement.Load(InterstitialId, this);
+        InterstitialAd.Load(InterstitialId, new AdRequest(), (ad, error) =>
+        {
+            if (error != null) { Debug.LogWarning("Interstitial yüklenemedi: " + error); return; }
+            interstitialAd = ad;
+            interstitialAd.OnAdFullScreenContentClosed += () =>
+            {
+                onInterstitialClosed?.Invoke();
+                onInterstitialClosed = null;
+                LoadInterstitial();
+            };
+            interstitialAd.OnAdFullScreenContentFailed += _ =>
+            {
+                onInterstitialClosed?.Invoke();
+                onInterstitialClosed = null;
+                LoadInterstitial();
+            };
+            Debug.Log("Interstitial yüklendi.");
+        });
     }
 
     public void ShowInterstitial(Action onClosed = null)
     {
-        if (IAPManager.Instance != null &&
-            (IAPManager.Instance.IsNoAdsPurchased() || IAPManager.Instance.IsVIPPurchased()))
-        {
-            onClosed?.Invoke();
-            return;
-        }
+        if (IsAdsRemoved()) { onClosed?.Invoke(); return; }
 
-        if (!isInitialized || !interstitialReady)
+        if (interstitialAd != null && interstitialAd.CanShowAd())
+        {
+            onInterstitialClosed = onClosed;
+            interstitialAd.Show();
+        }
+        else
         {
             onClosed?.Invoke();
             LoadInterstitial();
-            return;
         }
-
-        onInterstitialClosed = onClosed;
-        Advertisement.Show(InterstitialId, this);
     }
 
     // ──────────────────────────────────────────
@@ -173,22 +141,42 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     private void LoadRewarded()
     {
-        rewardedReady = false;
-        Advertisement.Load(RewardedId, this);
+        RewardedAd.Load(RewardedId, new AdRequest(), (ad, error) =>
+        {
+            if (error != null) { Debug.LogWarning("Rewarded yüklenemedi: " + error); return; }
+            rewardedAd = ad;
+            rewardedAd.OnAdFullScreenContentClosed += () =>
+            {
+                onRewardEarned = null;
+                LoadRewarded();
+            };
+            rewardedAd.OnAdFullScreenContentFailed += _ =>
+            {
+                onRewardEarned?.Invoke();
+                onRewardEarned = null;
+                LoadRewarded();
+            };
+            Debug.Log("Rewarded yüklendi.");
+        });
     }
 
     public void ShowRewarded(Action onReward)
     {
-        if (!isInitialized || !rewardedReady)
+        if (rewardedAd != null && rewardedAd.CanShowAd())
+        {
+            onRewardEarned = onReward;
+            rewardedAd.Show(_ =>
+            {
+                onRewardEarned?.Invoke();
+                onRewardEarned = null;
+            });
+        }
+        else
         {
             Debug.LogWarning("Rewarded hazır değil, direkt veriliyor.");
             onReward?.Invoke();
             LoadRewarded();
-            return;
         }
-
-        onRewardEarned = onReward;
-        Advertisement.Show(RewardedId, this);
     }
 
     // ──────────────────────────────────────────
@@ -197,12 +185,7 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
 
     public void OnLevelCompleted(int globalLevel, Action onClosed = null)
     {
-        if (IAPManager.Instance != null &&
-            (IAPManager.Instance.IsNoAdsPurchased() || IAPManager.Instance.IsVIPPurchased()))
-        {
-            onClosed?.Invoke();
-            return;
-        }
+        if (IsAdsRemoved()) { onClosed?.Invoke(); return; }
 
         if (globalLevel % 3 == 0)
             ShowInterstitial(onClosed);
@@ -211,80 +194,12 @@ public class AdManager : MonoBehaviour, IUnityAdsInitializationListener, IUnityA
     }
 
     // ──────────────────────────────────────────
-    // IUnityAdsLoadListener
+    // Yardımcı
     // ──────────────────────────────────────────
 
-    public void OnUnityAdsAdLoaded(string placementId)
+    private bool IsAdsRemoved()
     {
-        Debug.Log("Reklam yüklendi: " + placementId);
-
-        if (placementId == InterstitialId)
-            interstitialReady = true;
-        else if (placementId == RewardedId)
-            rewardedReady = true;
-    }
-
-    public void OnUnityAdsFailedToLoad(string placementId, UnityAdsLoadError error, string message)
-    {
-        Debug.LogWarning($"Reklam yüklenemedi: {placementId} | {error} | {message}");
-    }
-
-    // ──────────────────────────────────────────
-    // IUnityAdsShowListener
-    // ──────────────────────────────────────────
-
-    public void OnUnityAdsShowComplete(string placementId, UnityAdsShowCompletionState showCompletionState)
-    {
-        Debug.Log($"Reklam tamamlandı: {placementId} | {showCompletionState}");
-
-        if (placementId == InterstitialId)
-        {
-            interstitialReady = false;
-            onInterstitialClosed?.Invoke();
-            onInterstitialClosed = null;
-            LoadInterstitial();
-        }
-        else if (placementId == RewardedId)
-        {
-            rewardedReady = false;
-
-            if (showCompletionState == UnityAdsShowCompletionState.COMPLETED)
-            {
-                Debug.Log("Ödül kazanıldı!");
-                onRewardEarned?.Invoke();
-            }
-
-            onRewardEarned = null;
-            LoadRewarded();
-        }
-    }
-
-    public void OnUnityAdsShowFailure(string placementId, UnityAdsShowError error, string message)
-    {
-        Debug.LogWarning($"Reklam gösterilemedi: {placementId} | {error} | {message}");
-
-        if (placementId == InterstitialId)
-        {
-            onInterstitialClosed?.Invoke();
-            onInterstitialClosed = null;
-            LoadInterstitial();
-        }
-        else if (placementId == RewardedId)
-        {
-            onRewardEarned?.Invoke();
-            onRewardEarned = null;
-            LoadRewarded();
-        }
-    }
-
-    public void OnUnityAdsShowStart(string placementId)
-    {
-        Debug.Log("Reklam başladı: " + placementId);
-        HideBanner();
-    }
-
-    public void OnUnityAdsShowClick(string placementId)
-    {
-        Debug.Log("Reklama tıklandı: " + placementId);
+        return IAPManager.Instance != null &&
+               (IAPManager.Instance.IsNoAdsPurchased() || IAPManager.Instance.IsVIPPurchased());
     }
 }

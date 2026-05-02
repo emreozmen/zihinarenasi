@@ -1,3 +1,5 @@
+using System;
+using System.Collections;
 using UnityEngine;
 
 #if UNITY_ANDROID
@@ -9,8 +11,13 @@ public class LeaderboardManager : MonoBehaviour
 {
     public static LeaderboardManager Instance;
 
-    private const string LeaderboardTotalScore = "CgkI5Ob3ucYeEAIQAQ";
-    private const string LeaderboardTotalStars = "CgkI5Ob3ucYeEAIQAg";
+    // Android - Google Play Games
+    private const string AndroidLeaderboardTotalScore = "CgkI5Ob3ucYeEAIQAQ";
+    private const string AndroidLeaderboardTotalStars = "CgkI5Ob3ucYeEAIQAg";
+
+    // iOS - Game Center
+    private const string IOSLeaderboardTotalScore = "com.zihinarenasi.leaderboard.totalscore";
+    private const string IOSLeaderboardTotalStars = "com.zihinarenasi.leaderboard.totalstars";
 
     private void Awake()
     {
@@ -28,30 +35,13 @@ public class LeaderboardManager : MonoBehaviour
 
     private void Start()
     {
-        InitializePlayGames();
-    }
-
-    // ──────────────────────────────────────────
-    // Başlatma
-    // ──────────────────────────────────────────
-
-    private void InitializePlayGames()
-    {
 #if UNITY_ANDROID
         PlayGamesPlatform.Activate();
-        SignIn();
-#endif
-    }
-
-    private void SignIn()
-    {
-#if UNITY_ANDROID
-        PlayGamesPlatform.Instance.ManuallyAuthenticate(success =>
+        PlayGamesPlatform.Instance.ManuallyAuthenticate(_ => { });
+#elif UNITY_IOS
+        Social.localUser.Authenticate(success =>
         {
-            if (success == SignInStatus.Success)
-                Debug.Log("Google Play Games: Giriş başarılı!");
-            else
-                Debug.LogWarning("Google Play Games: Giriş başarısız — " + success);
+            Debug.Log("Game Center giriş: " + success);
         });
 #endif
     }
@@ -64,7 +54,9 @@ public class LeaderboardManager : MonoBehaviour
     {
 #if UNITY_ANDROID
         if (!PlayGamesPlatform.Instance.IsAuthenticated()) return;
-        Social.ReportScore(score, LeaderboardTotalScore, success =>
+        PlayGamesPlatform.Instance.ReportScore(score, AndroidLeaderboardTotalScore, null);
+#elif UNITY_IOS
+        Social.ReportScore(score, IOSLeaderboardTotalScore, success =>
         {
             Debug.Log("Toplam puan gönderildi: " + score + " | Başarılı: " + success);
         });
@@ -75,7 +67,9 @@ public class LeaderboardManager : MonoBehaviour
     {
 #if UNITY_ANDROID
         if (!PlayGamesPlatform.Instance.IsAuthenticated()) return;
-        Social.ReportScore(stars, LeaderboardTotalStars, success =>
+        PlayGamesPlatform.Instance.ReportScore(stars, AndroidLeaderboardTotalStars, null);
+#elif UNITY_IOS
+        Social.ReportScore(stars, IOSLeaderboardTotalStars, success =>
         {
             Debug.Log("Toplam yıldız gönderildi: " + stars + " | Başarılı: " + success);
         });
@@ -89,26 +83,65 @@ public class LeaderboardManager : MonoBehaviour
     public void ShowTotalScoreLeaderboard()
     {
 #if UNITY_ANDROID
-        if (!PlayGamesPlatform.Instance.IsAuthenticated()) { SignIn(); return; }
-        PlayGamesPlatform.Instance.ShowLeaderboardUI(LeaderboardTotalScore);
+        if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        {
+            SignInAndroid(() => PlayGamesPlatform.Instance.ShowLeaderboardUI(AndroidLeaderboardTotalScore));
+            return;
+        }
+        PlayGamesPlatform.Instance.ShowLeaderboardUI(AndroidLeaderboardTotalScore);
+#elif UNITY_IOS
+        Social.ShowLeaderboardUI();
 #endif
     }
 
     public void ShowTotalStarsLeaderboard()
     {
 #if UNITY_ANDROID
-        if (!PlayGamesPlatform.Instance.IsAuthenticated()) { SignIn(); return; }
-        PlayGamesPlatform.Instance.ShowLeaderboardUI(LeaderboardTotalStars);
+        if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        {
+            SignInAndroid(() => PlayGamesPlatform.Instance.ShowLeaderboardUI(AndroidLeaderboardTotalStars));
+            return;
+        }
+        PlayGamesPlatform.Instance.ShowLeaderboardUI(AndroidLeaderboardTotalStars);
+#elif UNITY_IOS
+        Social.ShowLeaderboardUI();
 #endif
     }
 
     public void ShowAllLeaderboards()
     {
 #if UNITY_ANDROID
-        if (!PlayGamesPlatform.Instance.IsAuthenticated()) { SignIn(); return; }
+        if (!PlayGamesPlatform.Instance.IsAuthenticated())
+        {
+            SignInAndroid(() => PlayGamesPlatform.Instance.ShowLeaderboardUI());
+            return;
+        }
         PlayGamesPlatform.Instance.ShowLeaderboardUI();
+#elif UNITY_IOS
+        Social.ShowLeaderboardUI();
 #endif
     }
+
+    // ──────────────────────────────────────────
+    // Android Giriş
+    // ──────────────────────────────────────────
+
+#if UNITY_ANDROID
+    private void SignInAndroid(Action onSuccess)
+    {
+        PlayGamesPlatform.Instance.ManuallyAuthenticate(status =>
+        {
+            if (status == SignInStatus.Success)
+                StartCoroutine(ShowAfterDelay(onSuccess));
+        });
+    }
+
+    private IEnumerator ShowAfterDelay(Action action)
+    {
+        yield return new WaitForSeconds(0.5f);
+        action?.Invoke();
+    }
+#endif
 
     // ──────────────────────────────────────────
     // Giriş Durumu
@@ -118,6 +151,8 @@ public class LeaderboardManager : MonoBehaviour
     {
 #if UNITY_ANDROID
         return PlayGamesPlatform.Instance.IsAuthenticated();
+#elif UNITY_IOS
+        return Social.localUser.authenticated;
 #else
         return false;
 #endif

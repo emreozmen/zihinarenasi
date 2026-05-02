@@ -13,6 +13,7 @@ public class WordDatabaseService : MonoBehaviour
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject);
             LoadDatabase();
         }
         else

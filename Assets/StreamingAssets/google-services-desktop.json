@@ -7,20 +7,22 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:925625506741:android:a236a8050fb411bba817fc",
+        "mobilesdk_app_id": "1:925625506741:ios:0e38e3d0b3cd26e2a817fc",
         "android_client_info": {
-          "package_name": "com.emreozmen.zihinarenasi"
+          "package_name": "com.zihinarenasi.zihinarenasi"
         }
       },
-      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyA1dA0EL_MCqLnPVvI6TUetAkXSrlgCKF4"
+          "current_key": "AIzaSyCbLlzm2u5o9_ldGvi8fm_AYOMi7i9fmQE"
         }
       ],
       "services": {
+        "analytics_service": {
+          "status": 0
+        },
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "status": 1
         }
       }
     }

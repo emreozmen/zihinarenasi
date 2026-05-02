@@ -304,7 +304,7 @@ public class WordRoundManager : MonoBehaviour
         if (!isRoundActive) return;
 
         timeRemaining -= Time.deltaTime;
-        timerText.text = Mathf.CeilToInt(timeRemaining).ToString();
+        if (timerText != null) timerText.text = Mathf.CeilToInt(timeRemaining).ToString();
 
         if (timeRemaining <= 0f)
             EndRound();

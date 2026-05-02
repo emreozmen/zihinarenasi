@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+#pragma warning disable CS0618
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
 
@@ -7,11 +8,11 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
 {
     public static IAPManager Instance;
 
-    public const string ProductNoAds = "noads";
-    public const string ProductHintPack = "hintpack";
-    public const string ProductVIP = "vip";
-    public const string ProductSupport = "support";
-    public const string ProductLivesPack = "livespack";
+    public const string ProductNoAds = "com.zihinarenasi.noads";
+    public const string ProductHintPack = "com.zihinarenasi.hintpack";
+    public const string ProductVIP = "com.zihinarenasi.vip";
+    public const string ProductSupport = "com.zihinarenasi.support";
+    public const string ProductLivesPack = "com.zihinarenasi.livespack";
 
     private const string NoAdsKey = "NoAdsPurchased";
     private const string VIPKey = "VIPPurchased";
@@ -166,7 +167,7 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
 
             Debug.Log("5 can eklendi!");
 
-            UIManager uiManager = FindObjectOfType<UIManager>();
+            UIManager uiManager = FindFirstObjectByType<UIManager>();
             if (uiManager != null) uiManager.HideAllPanels();
 
             if (ShopManager.Instance != null)
@@ -178,14 +179,6 @@ public class IAPManager : MonoBehaviour, IDetailedStoreListener
         {
             Debug.Log("Geliştirici desteklendi, teşekkürler!");
         }
-
-        // Firebase'e satın alma logunu kaydet
-        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
-            FirebaseManager.Instance.LogPurchase(productId);
-
-        // Firebase'e oyuncu verilerini güncelle
-        if (FirebaseManager.Instance != null && FirebaseManager.Instance.IsReady())
-            FirebaseManager.Instance.SavePlayerData();
 
         return PurchaseProcessingResult.Complete;
     }

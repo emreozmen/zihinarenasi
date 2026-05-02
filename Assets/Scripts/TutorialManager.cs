@@ -21,7 +21,6 @@ public class TutorialManager : MonoBehaviour
     public Color dotInactiveColor = new Color(0.27f, 0.27f, 0.27f, 1f);
 
     private int currentSlide = 0;
-    private int totalSlides = 5;
 
     private const string TutorialShownKey = "TutorialShown";
 

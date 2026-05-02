@@ -7,11 +7,10 @@ public class SceneLoader : MonoBehaviour
 {
     public static SceneLoader Instance;
 
-    [Header("Fade Panel")]
-    public Image fadePanel;
-
     [Header("Ayarlar")]
-    public float fadeDuration = 0f;
+    public float fadeDuration = 0.3f;
+
+    private Image fadePanel;
 
     private void Awake()
     {
@@ -19,6 +18,7 @@ public class SceneLoader : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            CreateFadePanel();
         }
         else
         {
@@ -27,13 +27,31 @@ public class SceneLoader : MonoBehaviour
         }
     }
 
-    private void Start()
+    private void CreateFadePanel()
     {
-        if (fadePanel != null)
-        {
-            fadePanel.gameObject.SetActive(false);
-            fadePanel.color = new Color(0, 0, 0, 0);
-        }
+        var canvasGO = new GameObject("FadeCanvas");
+        canvasGO.transform.SetParent(transform);
+
+        var canvas = canvasGO.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 999;
+        canvasGO.AddComponent<CanvasScaler>();
+        canvasGO.AddComponent<GraphicRaycaster>();
+
+        var panelGO = new GameObject("FadePanel");
+        panelGO.transform.SetParent(canvasGO.transform, false);
+
+        fadePanel = panelGO.AddComponent<Image>();
+        fadePanel.color = new Color(0, 0, 0, 0);
+        fadePanel.raycastTarget = false;
+
+        var rect = panelGO.GetComponent<RectTransform>();
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        panelGO.SetActive(false);
     }
 
     public void LoadScene(string sceneName)
@@ -48,34 +66,30 @@ public class SceneLoader : MonoBehaviour
 
     private IEnumerator LoadSceneAsync(string sceneName)
     {
-        yield return StartCoroutine(Fade(0f, 1f));
-
         AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
         op.allowSceneActivation = false;
 
         while (op.progress < 0.9f)
             yield return null;
 
+        yield return StartCoroutine(Fade(0f, 1f));
         op.allowSceneActivation = true;
         yield return null;
-
         yield return StartCoroutine(Fade(1f, 0f));
     }
 
     private IEnumerator LoadSceneAsyncByIndex(int buildIndex)
     {
-        yield return StartCoroutine(Fade(0f, 1f));
-
         AsyncOperation op = SceneManager.LoadSceneAsync(buildIndex);
         op.allowSceneActivation = false;
 
         while (op.progress < 0.9f)
             yield return null;
 
+        yield return StartCoroutine(Fade(0f, 1f));
         op.allowSceneActivation = true;
         yield return null;
-
-        yield return StartCoroutine(Fade(0f, 0f));
+        yield return StartCoroutine(Fade(1f, 0f));
     }
 
     private IEnumerator Fade(float from, float to)

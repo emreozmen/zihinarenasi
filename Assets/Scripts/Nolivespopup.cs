@@ -116,7 +116,7 @@ public class NoLivesPopup : MonoBehaviour
                     LivesManager.Instance.AddLife(1);
 
                 // Panelleri gizle
-                UIManager uiManager = FindObjectOfType<UIManager>();
+                UIManager uiManager = FindFirstObjectByType<UIManager>();
                 if (uiManager != null) uiManager.HideAllPanels();
 
                 Hide();
@@ -128,7 +128,7 @@ public class NoLivesPopup : MonoBehaviour
             if (LivesManager.Instance != null)
                 LivesManager.Instance.AddLife(1);
 
-            UIManager uiManager = FindObjectOfType<UIManager>();
+            UIManager uiManager = FindFirstObjectByType<UIManager>();
             if (uiManager != null) uiManager.HideAllPanels();
 
             Hide();
