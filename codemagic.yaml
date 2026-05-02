@@ -43,14 +43,33 @@ workflows:
           echo "UNITY_HOME=$UNITY_APP_PATH" >> $CM_ENV
       - name: Activate Unity License
         script: |
+          # Step 1: Generate .alf activation request file
+          $UNITY_HOME/Contents/MacOS/Unity \
+            -batchmode \
+            -nographics \
+            -quit \
+            -logFile /tmp/unity_alf.log \
+            -createManualActivationFile \
+            || true
+          cat /tmp/unity_alf.log || true
+
+          # Step 2: Try to activate with stored .ulf
           echo "$UNITY_LICENSE" > /tmp/Unity_lic.ulf
           $UNITY_HOME/Contents/MacOS/Unity \
             -batchmode \
+            -nographics \
             -quit \
             -logFile /tmp/unity_activate.log \
             -manualLicenseFile /tmp/Unity_lic.ulf \
             || true
           cat /tmp/unity_activate.log || true
+
+          # Step 3: Show generated .alf file path (for manual activation if needed)
+          ALF_FILE=$(find . -name "*.alf" 2>/dev/null | head -1)
+          if [ -n "$ALF_FILE" ]; then
+            echo "=== ALF FILE GENERATED: $ALF_FILE ==="
+            cat "$ALF_FILE"
+          fi
       - name: Build Unity iOS
         script: |
           echo "=== Working directory ==="
