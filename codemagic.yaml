@@ -12,13 +12,12 @@ workflows:
           curl -L -o /tmp/ZihinArenasi.ipa \
             "https://github.com/emreozmen/zihinarenasi/releases/download/v1.0/ZihinArenasi.ipa"
           echo "IPA size: $(du -sh /tmp/ZihinArenasi.ipa)"
-      - name: Upload to App Store Connect
+      - name: Copy IPA to artifacts location
         script: |
-          app-store-connect publish \
-            --path /tmp/ZihinArenasi.ipa \
-            --api-key "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
-            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
-            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+          mkdir -p build/ios/ipa
+          cp /tmp/ZihinArenasi.ipa build/ios/ipa/ZihinArenasi.ipa
+    artifacts:
+      - build/ios/ipa/*.ipa
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
