@@ -4,10 +4,7 @@ FirebaseFirestore iOS and Android Dependencies.
 -->
 
 <dependencies>
-  <remoteSwiftPackage url="https://github.com/firebase/firebase-ios-sdk.git" version="12.12.0">
-    <swiftPackage name="FirebaseFirestore" replacesPod="Firebase/Firestore"/>
-  </remoteSwiftPackage>
-  <iosPods>
+<iosPods>
     <iosPod name="Firebase/Firestore" version="12.12.0" minTargetSdk="15.0">
     </iosPod>
   </iosPods>
