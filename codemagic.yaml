@@ -12,18 +12,22 @@ workflows:
           curl -L -o /tmp/ZihinArenasi.ipa \
             "https://github.com/emreozmen/zihinarenasi/releases/download/v1.0/ZihinArenasi.ipa"
           echo "IPA size: $(du -sh /tmp/ZihinArenasi.ipa)"
-      - name: Copy IPA to artifacts location
+      - name: Upload to App Store Connect
         script: |
           mkdir -p build/ios/ipa
           cp /tmp/ZihinArenasi.ipa build/ios/ipa/ZihinArenasi.ipa
+
+          # Write key to file (avoids newline issues with env vars)
+          echo "$APP_STORE_CONNECT_PUBLISHER_PRIVATE_KEY" > /tmp/asc_key.p8
+
+          app-store-connect publish \
+            --path /tmp/ZihinArenasi.ipa \
+            --key-id "5JLL2SWQ5R" \
+            --issuer-id "00c1785c-9b7f-4c9e-ba01-2aa8b8e9ac9a" \
+            --private-key @file:/tmp/asc_key.p8 \
+            --testflight
     artifacts:
       - build/ios/ipa/*.ipa
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
-        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: true
 
   unity-ios-workflow:
     name: ZihinArenasi iOS Build
