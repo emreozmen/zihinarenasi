@@ -1,4 +1,31 @@
 workflows:
+  upload-to-appstore:
+    name: Upload IPA to App Store
+    max_build_duration: 30
+    instance_type: mac_mini_m2
+    environment:
+      groups:
+        - ios_credentials
+    scripts:
+      - name: Download IPA from GitHub Release
+        script: |
+          curl -L -o /tmp/ZihinArenasi.ipa \
+            "https://github.com/emreozmen/zihinarenasi/releases/download/v1.0/ZihinArenasi.ipa"
+          echo "IPA size: $(du -sh /tmp/ZihinArenasi.ipa)"
+      - name: Upload to App Store Connect
+        script: |
+          app-store-connect publish \
+            --path /tmp/ZihinArenasi.ipa \
+            --api-key "$APP_STORE_CONNECT_KEY_IDENTIFIER" \
+            --issuer-id "$APP_STORE_CONNECT_ISSUER_ID" \
+            --private-key "$APP_STORE_CONNECT_PRIVATE_KEY"
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+
   unity-ios-workflow:
     name: ZihinArenasi iOS Build
     max_build_duration: 120
