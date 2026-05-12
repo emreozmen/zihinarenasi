@@ -68,7 +68,7 @@ public class iOSPostBuild
         var plist = new PlistDocument();
         plist.ReadFromFile(plistPath);
         plist.root.SetString("NSUserTrackingUsageDescription",
-            "Zihin Arenasi, sana daha alakali reklamlar gosterebilmek icin reklam verilerini kullanmak istiyor.");
+            "Zihin Arenası, sana daha alakalı reklamlar gösterebilmek için reklam verilerini kullanmak istiyor.");
         plist.WriteToFile(plistPath);
 
         Debug.Log("[iOSPostBuild] Tamamlandi.");
