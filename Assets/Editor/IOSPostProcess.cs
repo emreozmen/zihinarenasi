@@ -19,6 +19,8 @@ public class IOSPostProcess
             "NSUserTrackingUsageDescription",
             "Reklamları kişiselleştirmek için cihaz tanımlayıcınıza erişmek istiyoruz."
         );
+        // Export compliance - şifreleme kullanmıyoruz
+        plist.root.SetBoolean("ITSAppUsesNonExemptEncryption", false);
         File.WriteAllText(plistPath, plist.WriteToString());
         Debug.Log("[IOSPostProcess] NSUserTrackingUsageDescription Info.plist'e eklendi.");
 
