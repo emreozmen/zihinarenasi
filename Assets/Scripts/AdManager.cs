@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using GoogleMobileAds.Api;
 
@@ -46,6 +48,39 @@ public class AdManager : MonoBehaviour
     }
 
     private void Start()
+    {
+#if UNITY_IOS
+        StartCoroutine(InitializeWithATT());
+#else
+        InitializeAdMob();
+#endif
+    }
+
+#if UNITY_IOS
+    [DllImport("__Internal")] private static extern void ATT_RequestAuthorization();
+    [DllImport("__Internal")] private static extern int  ATT_GetAuthorizationStatus();
+
+    private IEnumerator InitializeWithATT()
+    {
+        // 0 = NotDetermined — kullanıcıya sor
+        if (ATT_GetAuthorizationStatus() == 0)
+        {
+            ATT_RequestAuthorization();
+
+            // Dialog kapanana kadar bekle (max 30s)
+            float elapsed = 0f;
+            while (ATT_GetAuthorizationStatus() == 0 && elapsed < 30f)
+            {
+                yield return new WaitForSeconds(0.5f);
+                elapsed += 0.5f;
+            }
+        }
+
+        InitializeAdMob();
+    }
+#endif
+
+    private void InitializeAdMob()
     {
         MobileAds.Initialize(_ =>
         {

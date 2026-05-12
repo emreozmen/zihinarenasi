@@ -17,7 +17,7 @@ public class BuildScript
         PlayerSettings.companyName = "ZihinArenasi";
         PlayerSettings.productName = "Zihin Arenasi";
         PlayerSettings.bundleVersion = "1.0";
-        PlayerSettings.iOS.buildNumber = "6";
+        PlayerSettings.iOS.buildNumber = "7";
 
         BuildReport report = BuildPipeline.BuildPlayer(buildPlayerOptions);
         BuildSummary summary = report.summary;
