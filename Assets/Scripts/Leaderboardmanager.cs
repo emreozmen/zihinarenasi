@@ -138,7 +138,7 @@ public class LeaderboardManager : MonoBehaviour
 
     private IEnumerator ShowAfterDelay(Action action)
     {
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(1.5f);
         action?.Invoke();
     }
 #endif
