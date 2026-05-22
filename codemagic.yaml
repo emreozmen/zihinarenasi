@@ -10,7 +10,7 @@ workflows:
       - name: Download IPA from GitHub Release
         script: |
           curl -L -o /tmp/ZihinArenasi.ipa \
-            "https://github.com/emreozmen/zihinarenasi/releases/download/v1.2/ZihinArenasi.ipa"
+            "https://github.com/emreozmen/zihinarenasi/releases/download/v1.3/ZihinArenasi.ipa"
           echo "IPA size: $(du -sh /tmp/ZihinArenasi.ipa)"
       - name: Upload to App Store Connect
         script: |
