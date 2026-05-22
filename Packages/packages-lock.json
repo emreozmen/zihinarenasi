@@ -1,9 +1,9 @@
 {
   "dependencies": {
     "com.google.play.games": {
-      "version": "file:C:/Users/mehme/Desktop/play-games-plugin-for-unity-2.1.0/Assets/Public/GooglePlayGames/com.google.play.games",
+      "version": "file:com.google.play.games",
       "depth": 0,
-      "source": "local",
+      "source": "embedded",
       "dependencies": {}
     },
     "com.unity.2d.animation": {
