@@ -199,6 +199,12 @@ public class AdManager : MonoBehaviour
     {
         if (rewardedAd != null && rewardedAd.CanShowAd())
         {
+            // Reklam açılırken oyunu durdur
+            Time.timeScale = 0f;
+
+            rewardedAd.OnAdFullScreenContentClosed += ResumeGame;
+            rewardedAd.OnAdFullScreenContentFailed += _ => ResumeGame();
+
             onRewardEarned = onReward;
             rewardedAd.Show(_ =>
             {
@@ -212,6 +218,13 @@ public class AdManager : MonoBehaviour
             onReward?.Invoke();
             LoadRewarded();
         }
+    }
+
+    private void ResumeGame()
+    {
+        Time.timeScale = 1f;
+        rewardedAd.OnAdFullScreenContentClosed -= ResumeGame;
+        rewardedAd.OnAdFullScreenContentFailed -= _ => ResumeGame();
     }
 
     // ──────────────────────────────────────────
